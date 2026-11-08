@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Missão Zoológico — Desafio de Coloração</title>
+<style>
+:root{
+  --ink:#20312d;--muted:#64736e;--paper:#fbfaf5;--card:#ffffff;--line:#dce5dc;
+  --green:#286b50;--green2:#e7f2e9;--red:#b84d46;--gold:#e6b94f;
+  --shadow:0 12px 34px rgba(36,58,48,.09);
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(135deg,#f6f8ef,#edf4ef);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{padding:28px 22px 18px;text-align:center}
+.eyebrow{display:inline-block;padding:6px 11px;border-radius:999px;background:#e4efe4;color:#32634b;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+h1{font-size:clamp(28px,4vw,42px);margin:12px 0 8px;letter-spacing:-.04em}
+header p{max-width:720px;margin:0 auto;color:var(--muted);line-height:1.55}
+main{max-width:1180px;margin:0 auto;padding:12px 18px 36px;display:grid;grid-template-columns:minmax(0,1.55fr) minmax(290px,.85fr);gap:18px}
+.panel{background:var(--card);border:1px solid rgba(207,220,207,.85);border-radius:22px;box-shadow:var(--shadow)}
+.map-panel{padding:18px}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+h2{font-size:18px;margin:0}
+.small{font-size:13px;color:var(--muted)}
+.map-wrap{position:relative;background:#f5f8ef;border:1px solid #e5ecdf;border-radius:17px;overflow:hidden}
+svg{display:block;width:100%;height:auto;min-height:340px}
+.terrain{fill:#edf3e6;stroke:#d8e5d4;stroke-width:2}
+.path{fill:none;stroke:#d4c9a6;stroke-width:13;stroke-linecap:round;opacity:.65}
+.edge{stroke:#71867b;stroke-width:3.5;stroke-linecap:round;opacity:.85}
+.node{cursor:pointer;outline:none}
+.node circle{stroke:#fff;stroke-width:5;filter:drop-shadow(0 4px 4px rgba(30,50,40,.18));transition:transform .15s,stroke .15s}
+.node:hover circle{stroke:#20312d;stroke-width:6}
+.node text{font-size:13px;font-weight:800;fill:#20312d;text-anchor:middle;pointer-events:none}
+.node .animal{font-size:10px;font-weight:600;fill:#52655d}
+.node.selected circle{stroke:#20312d;stroke-width:7}
+.node.conflict circle{stroke:#c94f47;stroke-width:8;filter:drop-shadow(0 0 7px rgba(201,79,71,.5))}
+.node:focus circle{stroke:#20312d;stroke-width:7}
+.side{display:flex;flex-direction:column;gap:14px}
+.info{padding:19px}
+.info p{margin:9px 0 0;color:var(--muted);font-size:14px;line-height:1.55}
+.rule{margin-top:13px;padding:12px 13px;background:#f3f7f1;border-radius:13px;font-size:13px;line-height:1.45}
+.palette{display:flex;gap:10px;margin:15px 0 5px}
+.color-btn{flex:1;min-width:0;border:2px solid transparent;border-radius:13px;padding:10px 6px;background:#f7f8f5;cursor:pointer;font-weight:750;color:var(--ink);font-size:12px}
+.color-btn .swatch{display:block;width:26px;height:26px;border-radius:50%;margin:0 auto 7px;border:2px solid rgba(0,0,0,.08)}
+.color-btn.active{border-color:#334c40;background:#eef5ed;box-shadow:0 0 0 2px #fff inset}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:15px}
+button.action{border:0;border-radius:12px;padding:12px 13px;font-size:13px;font-weight:800;cursor:pointer;transition:transform .12s,filter .12s}
+button.action:hover{filter:brightness(.97);transform:translateY(-1px)}
+.primary{background:var(--green);color:white}
+.secondary{background:#edf2ec;color:#29473a}
+.outline{background:white;border:1px solid var(--line)!important;color:#40544a}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
+.status{margin-top:13px;padding:12px 13px;border-radius:12px;background:#f4f6f2;color:#52635a;font-size:13px;line-height:1.45;min-height:48px}
+.status.good{background:#e8f5e9;color:#245b3e}
+.status.bad{background:#fff0ed;color:#9d3d36}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.stat{background:#f7f8f5;border-radius:12px;padding:10px;text-align:center}
+.stat strong{display:block;font-size:20px}
+.stat span{font-size:11px;color:var(--muted)}
+.log{max-height:205px;overflow:auto;background:#172b25;color:#e7f2e8;border-radius:13px;padding:12px;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:12px;white-space:pre-wrap}
+.log:empty:before{content:"A execução aparecerá aqui quando você iniciar o Backtracking.";color:#a9c0b3}
+.legend{display:flex;gap:14px;flex-wrap:wrap;padding:11px 2px 0;font-size:12px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+footer{text-align:center;color:#718078;font-size:12px;padding:0 18px 25px}
+.prize{display:flex;align-items:center;gap:12px;background:#fff8e8;border:1px solid #f1dfae;border-radius:14px;padding:12px 13px;margin-top:14px}
+.prize .emoji{font-size:27px}
+.prize strong{display:block;font-size:13px}
+.prize span{display:block;color:#7a6841;font-size:12px;margin-top:2px}
+@media(max-width:850px){main{grid-template-columns:1fr}.side{display:grid;grid-template-columns:1fr 1fr}.info:first-child{grid-column:1/-1}}
+@media(max-width:560px){header{padding-top:22px}.map-panel{padding:11px}.side{display:flex}.panel-head{align-items:flex-start;flex-direction:column}svg{min-height:280px}.actions{grid-template-columns:1fr}}
+
+.tabs{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;padding:0 18px 6px}
+.tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:10px 18px;font-weight:800;font-size:14px;color:#40544a;cursor:pointer}
+.tab[aria-selected=true]{background:var(--green);color:#fff;border-color:var(--green)}
+[hidden]{display:none!important}
+.animal.below{font-size:11px;font-weight:700;fill:#3d5047;paint-order:stroke;stroke:#f5f8ef;stroke-width:4px}
+.tree-wrap{overflow:auto;max-height:620px;background:#f5f8ef;border:1px solid #e5ecdf;border-radius:17px}
+.tree-wrap svg{width:auto;max-width:none;min-height:0}
+.band{fill:#fff;opacity:.55}
+.colhead{font-size:11px;font-weight:700;fill:#64736e;text-anchor:middle}
+.tedge{fill:none;stroke:#b9c7bd;stroke-width:2}.tedge.on{stroke:#20312d;stroke-width:3}
+.tn{cursor:pointer;outline:none}.tn circle{stroke:#fff;stroke-width:3}
+.tn.open circle{stroke:#7d9186;stroke-dasharray:3 3}
+.tn.path circle{stroke:#20312d}.tn.sel circle{stroke:#20312d;stroke-width:5;stroke-dasharray:none}
+.tn text{font-size:10px;font-weight:800;fill:#20312d;text-anchor:middle;pointer-events:none}
+.tn .mk{font-size:16px;text-anchor:start}
+.tn.conflict .mk{fill:#c94f47}.tn.dead .mk{fill:#c47a1c}.tn.solution .mk{fill:#1f8a4c}
+.mini svg{min-height:0;height:200px;background:#f5f8ef;border:1px solid #e5ecdf;border-radius:14px;margin-top:12px}
+.node.next circle{stroke:#20312d;stroke-dasharray:5 4}
+.cbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.cbtns .color-btn{padding:8px 4px}.color-btn:disabled{opacity:.4;cursor:not-allowed}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--muted);margin-top:12px;line-height:1.4}
+</style>
+</head>
+<body>
+<header>
+  <span class="eyebrow">Desafio de teoria dos grafos</span>
+  <h1>🦁 Missão Zoológico</h1>
+  <p>Colora o mapa com apenas três cores, sem que setores vizinhos repitam a cor. Treine o raciocínio na aba da árvore de possibilidades e depois encare o desafio valendo bombom.</p>
+</header>
+<nav class="tabs" role="tablist">
+  <button class="tab" role="tab" aria-selected="true" data-tab="game">🎮 Jogo (valendo bombom)</button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="tree">🌳 Árvore de possibilidades</button>
+</nav>
+
+<main id="game">
+  <section class="panel map-panel">
+    <div class="panel-head"><h2>Mapa do zoológico — 14 setores</h2><span class="small">Clique em um setor para colori-lo</span></div>
+    <div class="map-wrap"><svg id="gsvg" role="img" aria-label="Mapa com catorze setores conectados por fronteiras"></svg></div>
+    <div class="legend">
+      <span><i class="dot" style="background:#71867b"></i> Setores vizinhos (arestas)</span>
+      <span><i class="dot" style="background:#c94f47"></i> Conflito de cores</span>
+    </div>
+    <div class="rule"><strong>Como interpretar:</strong> cada setor é um <b>vértice</b>; cada linha indica que dois setores são vizinhos. Vizinhos não podem ter a mesma cor.</div>
+  </section>
+  <aside class="side">
+    <section class="panel info">
+      <h2>🎯 Sua missão</h2>
+      <p>Use as três cores para colorir os 14 setores sem nenhum conflito. Atenção: pintar "na ordem, do jeito que der" <strong>não funciona</strong> neste mapa.</p>
+      <div class="palette">
+        <button class="color-btn active" data-color="1"><i class="swatch" style="background:#f2bd4b"></i>Amarelo</button>
+        <button class="color-btn" data-color="2"><i class="swatch" style="background:#55a8dc"></i>Azul</button>
+        <button class="color-btn" data-color="3"><i class="swatch" style="background:#e77d72"></i>Coral</button>
+      </div>
+      <div class="small">1. Escolha uma cor. 2. Clique nos setores. Clicar de novo com a mesma cor apaga o setor.</div>
+      <div class="actions">
+        <button class="action primary" id="check">Verificar solução</button>
+        <button class="action secondary" id="undo">Desfazer</button>
+        <button class="action outline" id="reset" style="grid-column:1/-1">Reiniciar jogo</button>
+      </div>
+      <div id="status" class="status" aria-live="polite">Escolha uma cor e comece a colorir os setores!</div>
+      <div class="stats">
+        <div class="stat"><strong id="colored">0/14</strong><span>Setores coloridos</span></div>
+        <div class="stat"><strong id="used">0/3</strong><span>Cores utilizadas</span></div>
+        <div class="stat"><strong id="conflicts">0</strong><span>Conflitos</span></div>
+      </div>
+      <div class="prize"><div class="emoji">🍫</div><div><strong>Prêmio: um bombom!</strong><span>Quem colorir os 14 setores sem conflitos leva o bombom.</span></div></div>
+    </section>
+    <section class="panel info">
+      <h2>🌳 Quer treinar antes?</h2>
+      <p>Na aba da árvore você monta, passo a passo, todas as tentativas do Backtracking em um mapa menor e vê onde dá para podar e voltar atrás.</p>
+      <div class="actions"><button class="action secondary" style="grid-column:1/-1" data-tab="tree">Ir para a árvore</button></div>
+    </section>
+  </aside>
+</main>
+
+<main id="tree" hidden>
+  <section class="panel map-panel">
+    <div class="panel-head"><h2>Árvore de possibilidades (mapa de treino)</h2><span class="small">Cada coluna é um setor; cada nó é uma cor testada</span></div>
+    <div class="tree-wrap"><svg id="tsvg" role="img" aria-label="Árvore de possibilidades do Backtracking"></svg></div>
+    <div class="legend">
+      <span><b style="color:#c94f47">✗</b> Conflito: ramo podado</span>
+      <span><b style="color:#c47a1c">↶</b> Beco sem saída: retrocesso</span>
+      <span><b style="color:#1f8a4c">★</b> Solução completa</span>
+      <span>Contorno tracejado: ainda há cores a testar</span>
+    </div>
+  </section>
+  <aside class="side">
+    <section class="panel info">
+      <h2>🧩 Construa a árvore</h2>
+      <p>Clique em um nó e escolha qual cor testar no próximo setor. Se a cor repetir a de um vizinho, o ramo é podado. Se as 3 cores falharem, volte e tente outro caminho.</p>
+      <div class="mini"><svg id="msvg" role="img" aria-label="Mapa de treino com a coloração do nó selecionado"></svg></div>
+      <div id="tinfo" class="status" aria-live="polite"></div>
+      <div class="cbtns">
+        <button class="color-btn" data-c="1"><i class="swatch" style="background:#f2bd4b"></i>Amarelo</button>
+        <button class="color-btn" data-c="2"><i class="swatch" style="background:#55a8dc"></i>Azul</button>
+        <button class="color-btn" data-c="3"><i class="swatch" style="background:#e77d72"></i>Coral</button>
+      </div>
+      <div class="actions">
+        <button class="action primary" id="exp3">Testar as 3 cores</button>
+        <button class="action secondary" id="expAll">Expandir tudo abaixo</button>
+        <button class="action outline" id="fold">Recolher ramo</button>
+        <button class="action outline" id="del">Apagar nó</button>
+        <button class="action outline" id="clr" style="grid-column:1/-1">Limpar árvore</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="fixA" checked> Fixar A = Amarelo (a árvore fica 3× menor; reinicia ao mudar)</label>
+      <div class="stats">
+        <div class="stat"><strong id="sN">0</strong><span>Cores testadas</span></div>
+        <div class="stat"><strong id="sP">0</strong><span>Podas</span></div>
+        <div class="stat"><strong id="sB">0</strong><span>Retrocessos</span></div>
+      </div>
+      <div class="stats" style="grid-template-columns:1fr"><div class="stat"><strong id="sS">0</strong><span>Soluções encontradas</span></div></div>
+    </section>
+  </aside>
+</main>
+<footer>Atividade didática: o mapa é uma representação simplificada para estudar coloração de grafos.</footer>
+
+<script>
+const NS="http://www.w3.org/2000/svg",$=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const FILL={1:"#f2bd4b",2:"#55a8dc",3:"#e77d72"},CN={1:"Amarelo",2:"Azul",3:"Coral"},CI={1:"Am",2:"Az",3:"Co"};
+const E=s=>s.split(" ").map(x=>[x[0],x[1]]);
+const TR={vb:"0 0 720 500",w:720,h:500,ids:[..."ABCDEFG"],
+  names:{A:"Entrada",B:"Felinos",C:"Primatas",D:"Aves",E:"Répteis",F:"Aquáticos",G:"Fazendinha"},
+  pos:{A:[145,125],B:[330,105],C:[255,270],D:[455,125],E:[570,270],F:[455,395],G:[610,75]},
+  edges:E("AB BC CA CD DE EF FC DG GE")};
+const CH={vb:"0 0 760 540",w:760,h:540,ids:[..."ABCDEFGHIJKLMN"],
+  names:{A:"Girafas",B:"Felinos",C:"Primatas",D:"Aves",E:"Répteis",F:"Entrada",G:"Fazendinha",H:"Elefantes",I:"Pandas",J:"Ursos",K:"Aquáticos",L:"Anfíbios",M:"Insetário",N:"Flamingos"},
+  pos:{A:[670,235],B:[583,105],C:[646,472],D:[501,458],E:[343,332],F:[109,115],G:[170,436],H:[554,258],I:[485,65],J:[189,328],K:[385,431],L:[432,179],M:[215,169],N:[254,70]},
+  edges:E("AB AC BH BL CD CH DH DK EG EH EJ EK EL FJ FM FN GK HK HL IL IN JM LM LN MN")};
+
+function build(svg,g,o){
+  svg.setAttribute("viewBox",g.vb);const nodes={};
+  const mk=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);(p||svg).appendChild(e);return e};
+  if(o.terrain)mk("path",{class:"terrain",d:`M20 20H${g.w-20}V${g.h-20}H20Z`});
+  g.edges.forEach(([a,b])=>{const p=g.pos[a],q=g.pos[b];mk("line",{class:"edge",x1:p[0],y1:p[1],x2:q[0],y2:q[1]})});
+  g.ids.forEach(id=>{
+    const n=mk("g",{class:"node","data-id":id,transform:`translate(${g.pos[id][0]} ${g.pos[id][1]})`});
+    if(o.act){n.setAttribute("tabindex",0);n.setAttribute("role","button");n.setAttribute("aria-label","Setor "+id+", "+g.names[id])}else n.style.pointerEvents="none";
+    mk("circle",{r:o.r,fill:"#fff"},n);
+    mk("text",{y:o.names==="in"?-3:5},n).textContent=id;
+    if(o.names==="in")mk("text",{class:"animal",y:14},n).textContent=g.names[id];
+    if(o.names==="below")mk("text",{class:"animal below",y:o.r+15},n).textContent=g.names[id];
+    nodes[id]=n});
+  return nodes;
+}
+const clashes=(g,st)=>g.edges.filter(([a,b])=>st[a]&&st[a]===st[b]);
+function paint(nodes,g,st){
+  const bad=new Set(clashes(g,st).flat());
+  g.ids.forEach(id=>{nodes[id].querySelector("circle").setAttribute("fill",st[id]?FILL[st[id]]:"#fff");nodes[id].classList.toggle("conflict",bad.has(id))});
+}
+
+/* ===== ABAS ===== */
+function showTab(t){
+  $$(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));
+  $("#game").hidden=t!=="game";$("#tree").hidden=t!=="tree";window.scrollTo(0,0);
+}
+$$("[data-tab]").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.tab)));
+
+/* ===== JOGO (grafo difícil) ===== */
+const gn=build($("#gsvg"),CH,{r:31,names:"below",act:true,terrain:true});
+let colors={},active=1,hist=[],won=false;
+const used=st=>new Set(Object.values(st).filter(Boolean)).size;
+function gRender(){
+  paint(gn,CH,colors);
+  $("#colored").textContent=CH.ids.filter(i=>colors[i]).length+"/14";
+  $("#used").textContent=used(colors)+"/3";
+  $("#conflicts").textContent=clashes(CH,colors).length;
+  $("#undo").disabled=!hist.length;
+}
+function gStatus(m,t=""){const e=$("#status");e.textContent=m;e.className="status "+t}
+function pick(id){
+  if(won)return;
+  hist.push({...colors});
+  if(colors[id]===active){delete colors[id];gRender();gStatus(`${CH.names[id]} voltou a ficar sem cor.`);return}
+  colors[id]=active;gRender();
+  const c=clashes(CH,colors).find(e=>e.includes(id));
+  if(c)gStatus(`Conflito: ${c[0]} e ${c[1]} são vizinhos e estão ${CN[colors[c[0]]]}. Troque uma das cores.`,"bad");
+  else gStatus(`${CH.names[id]} recebeu ${CN[active]}. Continue!`);
+}
+CH.ids.forEach(id=>{const n=gn[id];n.addEventListener("click",()=>pick(id));
+  n.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();pick(id)}})});
+$$("#game .color-btn").forEach(b=>b.addEventListener("click",()=>{active=+b.dataset.color;$$("#game .color-btn").forEach(x=>x.classList.toggle("active",x===b))}));
+$("#undo").addEventListener("click",()=>{if(hist.length&&!won){colors=hist.pop();gRender();gStatus("Última jogada desfeita.")}});
+$("#reset").addEventListener("click",()=>{colors={};hist=[];won=false;gRender();gStatus("Tabuleiro reiniciado. Boa sorte!")});
+$("#check").addEventListener("click",()=>{
+  const n=CH.ids.filter(i=>colors[i]).length,c=clashes(CH,colors).length;
+  if(n<14)return gStatus(`Ainda faltam ${14-n} setor(es) para colorir.`,"bad");
+  if(c)return gStatus(`Existem ${c} conflito(s). Vizinhos precisam ter cores diferentes.`,"bad");
+  won=true;gStatus("🎉 Solução encontrada! Todos os setores coloridos sem conflitos. Hora de reivindicar o bombom!","good");
+});
+gRender();
+
+/* ===== ÁRVORE DE POSSIBILIDADES (mapa de treino) ===== */
+const ord=TR.ids,NT=ord.length,mn=build($("#msvg"),TR,{r:21,names:"none"});
+let root,sel,fixA=true;
+const allowed=n=>n.d===0&&fixA?[1]:[1,2,3];
+const path=n=>{const o={};for(;n&&n.v;n=n.p)o[n.v]=n.c;return o};
+function clash(n){const pc=path(n.p);for(const [a,b] of TR.edges){const u=a===n.v?b:b===n.v?a:null;if(u&&pc[u]===n.c)return u}return null}
+function child(p,c){const n={p,c,d:p.d+1,v:ord[p.d],k:[],fold:false};n.x=clash(n);p.k.push(n);p.k.sort((a,b)=>a.c-b.c);return n}
+function stat(n){n.k.forEach(stat);n.s=n.x?"x":n.d===NT?"s":allowed(n).every(c=>n.k.some(k=>k.c===c&&(k.s==="x"||k.s==="d")))?"d":"o"}
+const flat=(n,a=[])=>{a.push(n);n.k.forEach(k=>flat(k,a));return a};
+const missing=n=>n.s==="o"&&allowed(n).some(c=>!n.k.some(k=>k.c===c));
+function reset(){root={p:null,c:0,d:0,v:null,k:[],fold:false};sel=root;tRender()}
+function grow(n){if(n.x||n.d===NT||flat(root).length>1500)return;
+  allowed(n).forEach(c=>{if(!n.k.some(k=>k.c===c))child(n,c)});n.k.forEach(grow)}
+function tRender(){
+  stat(root);const all=flat(root),rest=all.slice(1);
+  const pos=new Map();let row=0;
+  (function lay(n){const ks=n.fold?[]:n.k;if(!ks.length){pos.set(n,row++);return}ks.forEach(lay);pos.set(n,(pos.get(ks[0])+pos.get(ks[ks.length-1]))/2)})(root);
+  const CW=112,RH=36,X0=50,Y0=52,W=X0+NT*CW+90,H=Y0+Math.max(row,1)*RH+20;
+  const svg=$("#tsvg");svg.innerHTML="";svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  const mk=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);(p||svg).appendChild(e);return e};
+  for(let d=0;d<=NT;d++){
+    if(d%2===0)mk("rect",{class:"band",x:X0+d*CW-CW/2,y:0,width:CW,height:H});
+    mk("text",{class:"colhead",x:X0+d*CW,y:22}).textContent=d?`${ord[d-1]} · ${TR.names[ord[d-1]]}`:"Início";
+  }
+  const onPath=new Set();for(let n=sel;n;n=n.p)onPath.add(n);
+  const X=n=>X0+n.d*CW,Y=n=>Y0+pos.get(n)*RH;
+  (function edges(n){if(n.fold)return;n.k.forEach(k=>{const m=(X(n)+X(k))/2;
+    mk("path",{class:"tedge"+(onPath.has(k)?" on":""),d:`M${X(n)+15} ${Y(n)}C${m} ${Y(n)} ${m} ${Y(k)} ${X(k)-15} ${Y(k)}`});edges(k)})})(root);
+  (function nodes(n){
+    const g=mk("g",{class:`tn ${n.s==="o"?(missing(n)?"open":""):({x:"conflict",d:"dead",s:"solution"})[n.s]}${n===sel?" sel":onPath.has(n)?" path":""}`,transform:`translate(${X(n)} ${Y(n)})`,tabindex:0,role:"button"});
+    mk("title",{},g).textContent=n.v?`${n.v} = ${CN[n.c]}`+(n.x?` — conflito com ${n.x}`:""):"Início";
+    mk("circle",{r:15,fill:n.v?FILL[n.c]:"#fff"},g);
+    mk("text",{y:4},g).textContent=n.v?CI[n.c]:"∅";
+    const mark=n.s==="x"?"✗":n.s==="d"&&n.v?"↶":n.s==="s"?"★":"";
+    if(mark)mk("text",{class:"mk",x:21,y:5},g).textContent=mark;
+    if(n.fold&&n.k.length)mk("text",{class:"mk",x:21,y:5,style:"font-size:11px;fill:#64736e"},g).textContent="+"+(flat(n).length-1);
+    g.addEventListener("click",()=>{sel=n;tRender()});
+    g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();sel=n;tRender()}});
+    if(!n.fold)n.k.forEach(nodes);
+  })(root);
+  /* painel */
+  paint(mn,TR,path(sel));
+  mn&&ord.forEach(id=>{mn[id].classList.toggle("next",sel.s==="o"&&id===ord[sel.d]);if(sel.x&&(id===sel.v||id===sel.x))mn[id].classList.add("conflict")});
+  const pt=Object.entries(path(sel)).map(([v,c])=>`${v}=${CN[c]}`).join(" → ")||"Início (nenhum setor colorido)";
+  const nx=ord[sel.d],nm=TR.names[nx];
+  $("#tinfo").className="status "+(sel.s==="s"?"good":sel.s==="x"?"bad":"");
+  $("#tinfo").textContent=`Caminho: ${pt}. `+({
+    x:`Ramo podado: ${sel.v} e ${sel.x} são vizinhos e ficariam ${CN[sel.c]}.`,
+    s:"Solução completa! Os 7 setores estão coloridos sem conflitos.",
+    d:`Retrocesso: nenhuma cor serve em ${nx} (${nm}) neste caminho. Volte e teste outra cor antes.`,
+    o:`Qual cor testar em ${nx} (${nm})?`})[sel.s];
+  $$(".cbtns .color-btn").forEach(b=>b.disabled=!(sel.s==="o"&&allowed(sel).includes(+b.dataset.c)&&!sel.k.some(k=>k.c===+b.dataset.c)));
+  $("#exp3").disabled=!missing(sel);$("#expAll").disabled=!(sel.s==="o"||sel.d===0);
+  $("#fold").disabled=!sel.k.length;$("#fold").textContent=sel.fold?"Mostrar ramo":"Recolher ramo";
+  $("#del").disabled=!sel.p;$("#clr").disabled=!rest.length;
+  $("#sN").textContent=rest.length;$("#sP").textContent=rest.filter(n=>n.s==="x").length;
+  $("#sB").textContent=rest.filter(n=>n.s==="d").length;$("#sS").textContent=rest.filter(n=>n.s==="s").length;
+}
+$$(".cbtns .color-btn").forEach(b=>b.addEventListener("click",()=>{child(sel,+b.dataset.c);tRender()}));
+$("#exp3").addEventListener("click",()=>{allowed(sel).forEach(c=>{if(!sel.k.some(k=>k.c===c))child(sel,c)});tRender()});
+$("#expAll").addEventListener("click",()=>{sel.fold=false;grow(sel);tRender()});
+$("#fold").addEventListener("click",()=>{sel.fold=!sel.fold;tRender()});
+$("#del").addEventListener("click",()=>{const p=sel.p;p.k=p.k.filter(k=>k!==sel);sel=p;tRender()});
+$("#clr").addEventListener("click",reset);
+$("#fixA").addEventListener("change",e=>{fixA=e.target.checked;reset()});
+reset();
+</script>
+</body>
+</html>
